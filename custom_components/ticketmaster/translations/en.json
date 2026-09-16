@@ -1,0 +1,89 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Gig Finder",
+        "description": "Enter your Ticketmaster Discovery API key. Gig Finder shows upcoming gigs near your Home Assistant location, drawing on Ticketmaster, Fatsoma and Skiddle.",
+        "data": {
+          "api_key": "Discovery API key"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Failed to connect to the Ticketmaster API. Check your internet connection and try again.",
+      "invalid_api_key": "The API key was rejected. Double-check it and try again.",
+      "rate_limited": "Ticketmaster is rate-limiting requests. Wait a while and try again."
+    },
+    "abort": {
+      "already_configured": "Gig Finder is already configured."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Gig Finder options",
+        "description": "Choose a search radius around your home, an optional music genre from the list, how often to refresh, and which Fatsoma pages and Skiddle venues and genres to watch for gigs.",
+        "data": {
+          "radius_miles": "Search radius (miles)",
+          "genre": "Music genre (optional)",
+          "scan_interval": "Refresh interval (minutes)",
+          "fatsoma_page_ids": "Fatsoma pages (watch gigs)",
+          "fatsoma_page_search": "Add Fatsoma pages",
+          "fatsoma_page_search_description": "Type a venue or promoter name to search Fatsoma, then pick the matching pages.",
+          "skiddle_api_key": "Skiddle API key (optional)",
+          "skiddle_venue_ids": "Skiddle venues (watch gigs)",
+          "skiddle_genre_ids": "Skiddle genres (optional)",
+          "skiddle_genre_ids_description": "Only keep Skiddle gigs tagged with these genres. Leave empty to keep everything at the selected venues.",
+          "skiddle_venue_search": "Add Skiddle venues",
+          "skiddle_venue_search_description": "Type a venue name to search Skiddle's gig listings, then pick the matching venues."
+        }
+      },
+      "fatsoma_pages": {
+        "title": "Add Fatsoma pages",
+        "description": "Pick the Fatsoma pages whose gigs should be watched. Already-watched pages ticked here stay selected.",
+        "data": {
+          "fatsoma_page_ids": "Matching Fatsoma pages"
+        }
+      },
+      "skiddle_venues": {
+        "title": "Add Skiddle venues",
+        "description": "Pick the Skiddle venues whose gigs should be watched. Already-watched venues ticked here stay selected.",
+        "data": {
+          "skiddle_venue_ids": "Matching Skiddle venues"
+        }
+      }
+    },
+    "error": {
+      "no_pages_found": "No pages matched that search. Go back and try a different name.",
+      "no_venues_found": "No venues matched that search. Go back and try a different name.",
+      "skiddle_key_required": "Enter your Skiddle API key first, then search for venues.",
+      "invalid_api_key": "The Skiddle API key was rejected. Double-check it and try again.",
+      "rate_limited": "Skiddle is rate-limiting requests. Wait a while and try again.",
+      "cannot_connect": "Failed to reach the Skiddle API. Check your internet connection and try again."
+    }
+  },
+  "entity": {
+    "sensor": {
+      "next_event": {
+        "name": "Next event"
+      },
+      "next_event_starts_at": {
+        "name": "Next event starts at"
+      },
+      "next_event_venue": {
+        "name": "Next event venue"
+      },
+      "next_event_url": {
+        "name": "Next event URL"
+      },
+      "upcoming_events": {
+        "name": "Upcoming events"
+      }
+    },
+    "calendar": {
+      "events": {
+        "name": "Events"
+      }
+    }
+  }
+}
