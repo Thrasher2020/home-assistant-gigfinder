@@ -7,6 +7,5 @@
   "issue_tracker": "https://github.com/Thrasher2020/home-assistant-gigfinder/issues",
   "iot_class": "cloud_polling",
   "requirements": [],
-  "version": "0.1.0",
-  "homeassistant": "2024.8.0"
+  "version": "0.1.0"
 }

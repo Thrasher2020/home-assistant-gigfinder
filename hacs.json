@@ -1,6 +1,5 @@
 {
   "name": "Gig Finder",
   "render_readme": true,
-  "homeassistant": "2024.8.0",
-  "domain": "ticketmaster"
+  "homeassistant": "2024.8.0"
 }
