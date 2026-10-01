@@ -6,7 +6,6 @@ DOMAIN = "ticketmaster"
 NAME = "Gig Finder"
 
 CONF_RADIUS_MILES = "radius_miles"
-CONF_GENRE = "genre"
 CONF_GENRE_ID = "genre_id"
 CONF_SCAN_INTERVAL = "scan_interval"
 CONF_FATSOMA_PAGE_IDS = "fatsoma_page_ids"
@@ -17,12 +16,12 @@ CONF_SKIDDLE_GENRES = "skiddle_genre_ids"
 CONF_SKIDDLE_SEARCH = "skiddle_venue_search"
 
 DEFAULT_RADIUS_MILES = 50
-DEFAULT_GENRE = ""
 DEFAULT_SCAN_INTERVAL_MINUTES = 360
 MIN_SCAN_INTERVAL_MINUTES = 30
 DEFAULT_FATSOMA_PAGE_IDS: list[str] = []
 DEFAULT_SKIDDLE_VENUE_IDS: list[str] = []
 DEFAULT_SKIDDLE_GENRES: list[str] = []
+DEFAULT_GENRE_IDS: list[str] = []
 
 API_BASE_URL = "https://app.ticketmaster.com/discovery/v2"
 

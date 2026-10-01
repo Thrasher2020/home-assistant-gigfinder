@@ -22,10 +22,10 @@
     "step": {
       "init": {
         "title": "Gig Finder options",
-        "description": "Choose a search radius around your home, an optional music genre from the list, how often to refresh, and which Fatsoma pages and Skiddle venues and genres to watch for gigs.",
+        "description": "Choose a search radius around your home, the music genres to watch (leave empty for all — gigs matching any selected genre are kept), how often to refresh, and which Fatsoma pages and Skiddle venues and genres to watch for gigs.",
         "data": {
           "radius_miles": "Search radius (miles)",
-          "genre": "Music genre (optional)",
+          "genre_id": "Music genres (optional)",
           "scan_interval": "Refresh interval (minutes)",
           "fatsoma_page_ids": "Fatsoma pages (watch gigs)",
           "fatsoma_page_search": "Add Fatsoma pages",
