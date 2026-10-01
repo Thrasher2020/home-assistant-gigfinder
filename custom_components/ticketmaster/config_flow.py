@@ -26,7 +26,6 @@ from homeassistant.helpers.selector import (
 from .const import (
     CONF_FATSOMA_PAGE_IDS,
     CONF_FATSOMA_SEARCH,
-    CONF_GENRE,
     CONF_GENRE_ID,
     CONF_RADIUS_MILES,
     CONF_SCAN_INTERVAL,
@@ -35,7 +34,7 @@ from .const import (
     CONF_SKIDDLE_SEARCH,
     CONF_SKIDDLE_VENUE_IDS,
     DEFAULT_FATSOMA_PAGE_IDS,
-    DEFAULT_GENRE,
+    DEFAULT_GENRE_IDS,
     DEFAULT_RADIUS_MILES,
     DEFAULT_SCAN_INTERVAL_MINUTES,
     DEFAULT_SKIDDLE_GENRES,
@@ -60,8 +59,7 @@ def _ensure_options(entry: ConfigEntry) -> dict[str, Any]:
     """Return the stored options with any new defaults filled in."""
     options = dict(entry.options)
     options.setdefault(CONF_RADIUS_MILES, DEFAULT_RADIUS_MILES)
-    options.setdefault(CONF_GENRE, DEFAULT_GENRE)
-    options.setdefault(CONF_GENRE_ID, "")
+    options.setdefault(CONF_GENRE_ID, list(DEFAULT_GENRE_IDS))
     options.setdefault(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL_MINUTES)
     options.setdefault(CONF_FATSOMA_PAGE_IDS, list(DEFAULT_FATSOMA_PAGE_IDS))
     options.setdefault(CONF_SKIDDLE_API_KEY, "")
@@ -95,8 +93,7 @@ class TicketmasterConfigFlow(ConfigFlow, domain=DOMAIN):
                     data={CONF_API_KEY: api_key},
                     options={
                         CONF_RADIUS_MILES: DEFAULT_RADIUS_MILES,
-                        CONF_GENRE: DEFAULT_GENRE,
-                        CONF_GENRE_ID: "",
+                        CONF_GENRE_ID: list(DEFAULT_GENRE_IDS),
                         CONF_SCAN_INTERVAL: DEFAULT_SCAN_INTERVAL_MINUTES,
                         CONF_FATSOMA_PAGE_IDS: list(DEFAULT_FATSOMA_PAGE_IDS),
                         CONF_SKIDDLE_API_KEY: "",
@@ -161,16 +158,12 @@ class TicketmasterOptionsFlow(OptionsFlow):
         errors: dict[str, str] = {}
 
         if user_input is not None:
-            chosen = str(user_input.get(CONF_GENRE) or "")
-            genre_id = next(
-                (g["id"] for g in genres if g["name"] == chosen), ""
-            )
+            genre_ids = [str(g) for g in (user_input.get(CONF_GENRE_ID) or [])]
             skiddle_key = str(user_input.get(CONF_SKIDDLE_API_KEY) or "").strip()
             current_key = str(current.get(CONF_SKIDDLE_API_KEY) or "").strip()
             self._pending = {
                 CONF_RADIUS_MILES: user_input[CONF_RADIUS_MILES],
-                CONF_GENRE: chosen,
-                CONF_GENRE_ID: genre_id,
+                CONF_GENRE_ID: genre_ids,
                 CONF_SCAN_INTERVAL: user_input[CONF_SCAN_INTERVAL],
                 CONF_FATSOMA_PAGE_IDS: list(
                     user_input.get(CONF_FATSOMA_PAGE_IDS) or []
@@ -202,13 +195,16 @@ class TicketmasterOptionsFlow(OptionsFlow):
 
         source = user_input if user_input is not None else (self._pending or current)
 
-        genre_options = [{"label": "All genres", "value": ""}]
-        genre_options += [
-            {"label": g["name"], "value": g["name"]} for g in genres
+        genre_options = [
+            {"label": g["name"], "value": g["id"]} for g in genres
         ]
-        genre_default = str(source.get(CONF_GENRE) or "")
-        if genre_default not in {g["name"] for g in genres}:
-            genre_default = ""
+        stored_genre_ids = source.get(CONF_GENRE_ID) or []
+        if isinstance(stored_genre_ids, str):
+            stored_genre_ids = [stored_genre_ids]
+        known_genre_ids = {g["id"] for g in genres}
+        genre_default = [
+            str(gid) for gid in stored_genre_ids if str(gid) in known_genre_ids
+        ]
 
         page_options = []
         for page_id in source.get(CONF_FATSOMA_PAGE_IDS) or []:
@@ -258,13 +254,13 @@ class TicketmasterOptionsFlow(OptionsFlow):
                         )
                     ),
                     vol.Optional(
-                        CONF_GENRE,
+                        CONF_GENRE_ID,
                         default=genre_default,
                     ): SelectSelector(
                         SelectSelectorConfig(
                             options=genre_options,
                             mode=SelectSelectorMode.DROPDOWN,
-                            multiple=False,
+                            multiple=True,
                         )
                     ),
                     vol.Optional(
