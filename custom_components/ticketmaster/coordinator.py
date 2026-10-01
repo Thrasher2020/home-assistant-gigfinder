@@ -21,7 +21,6 @@ from homeassistant.helpers.update_coordinator import (
 from .const import (
     API_BASE_URL,
     CONF_FATSOMA_PAGE_IDS,
-    CONF_GENRE,
     CONF_GENRE_ID,
     CONF_RADIUS_MILES,
     CONF_SCAN_INTERVAL,
@@ -482,10 +481,16 @@ class TicketmasterApiClient:
         latitude: float,
         longitude: float,
         radius_miles: int,
-        genre: str | None,
-        genre_id: str | None,
+        genre_ids: list[str] | None = None,
+        max_pages: int = 10,
     ) -> list[dict[str, Any]]:
-        """Return upcoming music events near the given coordinate."""
+        """Return upcoming music events near the given coordinate.
+
+        Pages through the API (100 events per page) up to ``max_pages``.
+        The Discovery API caps deep paging at 1000 items, so with size=100
+        ten pages is the practical maximum. Genre filtering is applied
+        client-side so multiple genres combine as "any match".
+        """
         params: dict[str, Any] = {
             "latlong": f"{latitude},{longitude}",
             "radius": radius_miles,
@@ -495,34 +500,48 @@ class TicketmasterApiClient:
             "sort": "date,asc",
             "size": 100,
         }
-        if genre_id:
-            params["genreId"] = genre_id
-        elif genre:
-            params["classificationName"] = ["music", genre]
 
-        data = await self.async_request(path="events.json", params=params)
-        embedded = data.get("_embedded", {})
-
-        events = []
-        for event in embedded.get("events", []):
-            start = self._parse_start_datetime(event)
-            if start is None:
-                continue
-            venue = self._first_venue(event)
-            classification = self._first_classification(event)
-            events.append(
-                {
-                    "id": event.get("id"),
-                    "name": event.get("name"),
-                    "url": event.get("url"),
-                    "start": start,
-                    "venue": venue,
-                    "genre": classification,
-                    "lineup": self._lineup(event),
-                    "on_sale": self._is_on_sale(event),
-                    "source": "ticketmaster",
-                }
-            )
+        events: list[dict[str, Any]] = []
+        seen: set[str] = set()
+        wanted_genres = set(genre_ids or [])
+        for page in range(max_pages):
+            params["page"] = page
+            data = await self.async_request(path="events.json", params=params)
+            page_events = (data.get("_embedded") or {}).get("events") or []
+            if not page_events:
+                break
+            for event in page_events:
+                start = self._parse_start_datetime(event)
+                if start is None:
+                    continue
+                event_id = event.get("id")
+                if event_id and event_id in seen:
+                    continue
+                if event_id:
+                    seen.add(event_id)
+                venue = self._first_venue(event)
+                classification = self._first_classification(event)
+                if wanted_genres and not (
+                    classification and classification.get("id") in wanted_genres
+                ):
+                    continue
+                events.append(
+                    {
+                        "id": event_id,
+                        "name": event.get("name"),
+                        "url": event.get("url"),
+                        "start": start,
+                        "venue": venue,
+                        "genre": classification,
+                        "lineup": self._lineup(event),
+                        "on_sale": self._is_on_sale(event),
+                        "source": "ticketmaster",
+                    }
+                )
+            page_info = data.get("page") or {}
+            total_pages = int(page_info.get("totalPages") or 0)
+            if total_pages and page + 1 >= total_pages:
+                break
         return events
 
     def _parse_start_datetime(self, event: dict[str, Any]) -> datetime | None:
@@ -620,18 +639,13 @@ class TicketmasterCoordinator(DataUpdateCoordinator[list[dict[str, Any]]]):
         return int(options.get(CONF_RADIUS_MILES, 50))
 
     @property
-    def genre(self) -> str | None:
-        """Return the configured genre name, if any."""
+    def genre_ids(self) -> list[str]:
+        """Return the configured music genre IDs, if any."""
         options = dict(self._entry.options)
-        genre = str(options.get(CONF_GENRE, "") or "").strip()
-        return genre or None
-
-    @property
-    def genre_id(self) -> str | None:
-        """Return the configured music genre ID, if any."""
-        options = dict(self._entry.options)
-        genre_id = str(options.get(CONF_GENRE_ID, "") or "").strip()
-        return genre_id or None
+        raw = options.get(CONF_GENRE_ID) or []
+        if isinstance(raw, str):
+            raw = [raw]
+        return [str(genre_id).strip() for genre_id in raw if str(genre_id).strip()]
 
     @property
     def fatsoma_page_ids(self) -> list[str]:
@@ -681,8 +695,7 @@ class TicketmasterCoordinator(DataUpdateCoordinator[list[dict[str, Any]]]):
                 latitude=lat,
                 longitude=lon,
                 radius_miles=self.radius_miles,
-                genre=self.genre,
-                genre_id=self.genre_id,
+                genre_ids=self.genre_ids,
             )
         except ApiError as err:
             raise UpdateFailed(str(err)) from err
