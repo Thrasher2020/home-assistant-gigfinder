@@ -29,5 +29,6 @@ FATSOMA_BASE_URL = "https://api.fatsoma.com/v1"
 FATSOMA_GIGS_CATEGORY_ID = "1b24e0f9-325f-4ecc-a95c-d3a9ba767da8"
 
 SKIDDLE_API_BASE_URL = "https://www.skiddle.com/api/v1"
+SKIDDLE_TIME_ZONE = "Europe/London"
 
 UNITS = "mi"

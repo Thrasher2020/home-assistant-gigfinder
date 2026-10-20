@@ -338,14 +338,19 @@ class TicketmasterOptionsFlow(OptionsFlow):
             self._pending = pending
             return await self.async_step_init()
 
-        pages = await client.async_search_fatsoma_pages(self._search_query)
-        results = [
-            {"label": page["name"], "value": page["id"]}
-            for page in pages
-            if page.get("id")
-        ]
-        if not results:
-            errors["base"] = "no_pages_found"
+        results: list[dict[str, str]] = []
+        try:
+            pages = await client.async_search_fatsoma_pages(self._search_query)
+        except ApiError as err:
+            errors["base"] = err.reason
+        else:
+            results = [
+                {"label": page["name"], "value": page["id"]}
+                for page in pages
+                if page.get("id")
+            ]
+            if not results:
+                errors["base"] = "no_pages_found"
 
         base = list((self._pending or {}).get(CONF_FATSOMA_PAGE_IDS) or [])
         result_ids = {item["value"] for item in results}

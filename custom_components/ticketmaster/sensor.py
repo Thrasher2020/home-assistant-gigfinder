@@ -14,6 +14,7 @@ from homeassistant.const import EntityCategory
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
+from homeassistant.util import dt as dt_util
 
 from .const import DOMAIN
 from .coordinator import TicketmasterCoordinator
@@ -77,10 +78,10 @@ class TicketmasterSensor(CoordinatorEntity[TicketmasterCoordinator], SensorEntit
         events = self.coordinator.data or []
         if not events:
             return None
-        now = datetime.now()
+        now = dt_util.utcnow()
         for event in events:
             start: datetime = event["start"]
-            if start.replace(tzinfo=None) >= now.replace(tzinfo=None):
+            if start >= now:
                 return event
         return None
 
@@ -123,7 +124,7 @@ class TicketmasterSensor(CoordinatorEntity[TicketmasterCoordinator], SensorEntit
         """Return event provider and ticket link as attributes."""
         key = self.entity_description.key
         if key == "upcoming_events":
-            now = datetime.now()
+            now = dt_util.utcnow()
             events = self.coordinator.data or []
             upcoming = [
                 {
@@ -134,7 +135,7 @@ class TicketmasterSensor(CoordinatorEntity[TicketmasterCoordinator], SensorEntit
                     "url": event.get("url"),
                 }
                 for event in events
-                if event["start"].replace(tzinfo=None) >= now.replace(tzinfo=None)
+                if event["start"] >= now
             ]
             return {"events": upcoming}
         event = self._next_event

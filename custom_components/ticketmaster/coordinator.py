@@ -3,10 +3,9 @@
 from __future__ import annotations
 
 import logging
-from datetime import UTC, date, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta, tzinfo
 from typing import Any
 from urllib.parse import urlencode
-from zoneinfo import ZoneInfo
 
 from aiohttp import ClientError, ClientResponseError
 
@@ -17,6 +16,7 @@ from homeassistant.helpers.update_coordinator import (
     DataUpdateCoordinator,
     UpdateFailed,
 )
+from homeassistant.util import dt as dt_util
 
 from .const import (
     API_BASE_URL,
@@ -31,6 +31,7 @@ from .const import (
     FATSOMA_BASE_URL,
     FATSOMA_GIGS_CATEGORY_ID,
     SKIDDLE_API_BASE_URL,
+    SKIDDLE_TIME_ZONE,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -391,7 +392,8 @@ class TicketmasterApiClient:
         events: list[dict[str, Any]] = []
         venue_param = ",".join(venue_ids)
         genre_param = ",".join(genre_ids or [])
-        min_date = datetime.now(ZoneInfo("Europe/London")).strftime("%Y-%m-%d")
+        skiddle_tz = await dt_util.async_get_time_zone(SKIDDLE_TIME_ZONE) or UTC
+        min_date = datetime.now(skiddle_tz).strftime("%Y-%m-%d")
         offset = 0
         for _ in range(5):
             params: dict[str, Any] = {
@@ -408,7 +410,7 @@ class TicketmasterApiClient:
                 params["g"] = genre_param
             data = await self._async_skiddle_request("events/search/", params)
             results = data.get("results", [])
-            events.extend(self._parse_skiddle_events(results))
+            events.extend(self._parse_skiddle_events(results, skiddle_tz))
             paginate = data.get("paginate") or {}
             total = int(paginate.get("results") or len(results) or 0)
             if len(results) < 100 or offset + len(results) >= total:
@@ -417,7 +419,7 @@ class TicketmasterApiClient:
         return events
 
     @staticmethod
-    def _parse_skiddle_start(raw: str | None) -> datetime | None:
+    def _parse_skiddle_start(raw: str | None, time_zone: tzinfo) -> datetime | None:
         """Parse a Skiddle start timestamp into a timezone-aware datetime."""
         if not raw:
             return None
@@ -434,15 +436,15 @@ class TicketmasterApiClient:
                 return None
             if parsed.tzinfo is not None:
                 return parsed
-        return parsed.replace(tzinfo=ZoneInfo("Europe/London"))
+        return parsed.replace(tzinfo=time_zone)
 
     def _parse_skiddle_events(
-        self, results: list[dict[str, Any]]
+        self, results: list[dict[str, Any]], time_zone: tzinfo
     ) -> list[dict[str, Any]]:
         """Normalise Skiddle events into the shared event shape."""
         events: list[dict[str, Any]] = []
         for event in results:
-            start = self._parse_skiddle_start(event.get("startdate"))
+            start = self._parse_skiddle_start(event.get("startdate"), time_zone)
             if start is None:
                 continue
             venue = event.get("venue") or {}

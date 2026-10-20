@@ -12,6 +12,7 @@ from homeassistant.components.calendar import (
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.util import dt as dt_util
 
 from .const import DOMAIN
@@ -24,7 +25,7 @@ SOURCE_TAGS = {
 }
 
 
-class TicketmasterCalendar(CalendarEntity):
+class TicketmasterCalendar(CoordinatorEntity[TicketmasterCoordinator], CalendarEntity):
     """Representation of a Ticketmaster events calendar."""
 
     _attr_has_entity_name = True
@@ -36,19 +37,14 @@ class TicketmasterCalendar(CalendarEntity):
         entry: ConfigEntry,
     ) -> None:
         """Initialize the calendar."""
-        self._coordinator = coordinator
+        super().__init__(coordinator)
         self._attr_name = "Events"
         self._attr_unique_id = f"{entry.entry_id}_calendar"
 
     @property
-    def available(self) -> bool:
-        """Return True if the coordinator data is available."""
-        return self._coordinator.last_update_success
-
-    @property
     def event(self) -> CalendarEvent | None:
         """Return the next event."""
-        events = self._coordinator.data or []
+        events = self.coordinator.data or []
         if not events:
             return None
         now = dt_util.now()
@@ -64,7 +60,7 @@ class TicketmasterCalendar(CalendarEntity):
         end_date: datetime,
     ) -> list[CalendarEvent]:
         """Return events within the given time range."""
-        events = self._coordinator.data or []
+        events = self.coordinator.data or []
         return [
             self._to_calendar_event(event)
             for event in events
