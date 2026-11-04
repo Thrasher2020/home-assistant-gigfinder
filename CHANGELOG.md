@@ -2,6 +2,14 @@
 
 All notable changes to the Gig Finder integration are documented here.
 
+## [0.2.2] - 2026-11-04
+
+### Fixed
+- API errors raised by the Ticketmaster and Skiddle request helpers no longer
+  include the request URL. The URL carries the API key as a query parameter,
+  so it could end up in Home Assistant logs. Messages now carry only the HTTP
+  status, or the exception type for other network errors.
+
 ## [0.2.1] - 2026-10-20
 
 ### Fixed

@@ -80,8 +80,10 @@ class TicketmasterApiClient:
             return await response.json()
         except ApiError:
             raise
+        except ClientResponseError as err:
+            raise ApiError(f"HTTP {err.status}") from None
         except ClientError as err:
-            raise ApiError(f"Request failed: {err}") from err
+            raise ApiError(f"Request failed: {type(err).__name__}") from None
         except TimeoutError as err:
             raise ApiError("Request timed out") from err
 
@@ -276,8 +278,10 @@ class TicketmasterApiClient:
             return await response.json()
         except ApiError:
             raise
+        except ClientResponseError as err:
+            raise ApiError(f"Skiddle HTTP {err.status}") from None
         except ClientError as err:
-            raise ApiError(f"Skiddle request failed: {err}") from err
+            raise ApiError(f"Skiddle request failed: {type(err).__name__}") from None
         except TimeoutError as err:
             raise ApiError("Skiddle request timed out") from err
 
